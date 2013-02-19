@@ -1,0 +1,8 @@
+Build:
+ $ ant
+
+Run:
+ $ java -cp build/examples:dist/java_websocket.jar EchoServer
+
+Credits to TooTallNate's Java-WebSocket
+
