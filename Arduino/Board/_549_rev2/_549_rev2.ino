@@ -54,7 +54,7 @@ const int LED2 = 3;
 const int LED3 = 5;
 const int LED4 = 7;
 
-const int ERMdecayRate = 40;
+const int ERMdecayRate = 100;
 const int ERMspikeValue = 4080;
 
 // starting values for the ERMs. These values also get written to the LEDs
@@ -69,7 +69,7 @@ int ERM4value = 4096/7 * 3;
 ////////////////////////////////////////////////////////////////////////////////
 void setup() {
   Serial.begin(9600);
-  Serial.setTimeout(2000);
+  Serial.setTimeout(10);
   
   Tlc.init(2048);  // can pass an intial PWM value for each channel
   
@@ -80,7 +80,10 @@ void setup() {
 ////////////////////////////////////////////////////////////////////////////////
 // void loop()
 ////////////////////////////////////////////////////////////////////////////////
-void loop() {  
+void loop() {
+  updateButtonStates();
+  updatePWM_Driver(); 
+  
   int len = Serial.readBytesUntil('\n', inData, BUFFLEN);
   if (len == 0) {
     // Ignore command if nothing received
@@ -93,27 +96,27 @@ void loop() {
   inData[len] = '\0';
   String cmd = String(inData);
   
+  // Acknowledge with length of received message
   Serial.print("(");
   Serial.print(len);
   Serial.print(") ");
   
-  if (cmd.startsWith("ON")) {
-    Serial.print("Received message: ");
-    Serial.println(cmd);
-    digitalWrite(BLINK_LED, HIGH);
-  }
-  else if (cmd.startsWith("OFF")) {
+  if (cmd.startsWith("UPDATE:0,0,0")) {
+    startWaveReponse();
     Serial.print("Received message: ");
     Serial.println(cmd);
     digitalWrite(BLINK_LED, LOW);
+  }
+  else if (cmd.startsWith("UPDATE:0,0,")) {
+    startWaveReponse();
+    Serial.print("Received message: ");
+    Serial.println(cmd);
+    digitalWrite(BLINK_LED, HIGH);
   }
   else {
     Serial.print("Received unknown message: ");
     Serial.println(inData);
   }
-  
-  updateButtonStates();
-  updatePWM_Driver(); 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
