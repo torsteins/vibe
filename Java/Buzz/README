@@ -2,7 +2,7 @@ Build:
  $ ant
 
 Run:
- $ java -cp build/examples:dist/java_websocket.jar EchoServer
+ $ java -cp build/examples:dist/java_websocket.jar:../Vibe/dist/Vibe.jar:../Libraries/RXTXcomm.jar EchoServer
 
 Credits to TooTallNate's Java-WebSocket
 
