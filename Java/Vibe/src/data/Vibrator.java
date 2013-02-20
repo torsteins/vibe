@@ -22,7 +22,6 @@ package data;
  */
 public class Vibrator {
     private static final int MAX_VALUE = 255;
-    private static final int MIN_VALUE = 0;
     private final int module;
     private final int vibrator;
     private int value;
@@ -39,6 +38,10 @@ public class Vibrator {
     }
     
     
+    // Equality is only concerned with the address of the vibrator, i. e. the
+    // module and vibrator variables. The value is irrelevant. This is done so
+    // that using the Vibrator with a HashSet will never include two values
+    // for the same vibrator. The same concept is applied to hashCode()
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Vibrator)) return false;
@@ -47,6 +50,10 @@ public class Vibrator {
                 (this.getVibrator() == that.getVibrator()));
     }
 
+    // The hashCode() is only concerned with the address of the vibrator, i. e.
+    // the module and vibrator variables. The value is irrelevant. This is done
+    // so that using the Vibrator with a HashSet will never include two
+    // values for the same vibrators. The same concept is applied to equals()
     @Override
     public int hashCode() {
         int hash = 3;
@@ -72,13 +79,21 @@ public class Vibrator {
         return this.value;
     }
     
-    public final boolean setValue(int value) {
-        if (value > Vibrator.MAX_VALUE) return false;
-        if (value < Vibrator.MIN_VALUE) return false;
-        this.value = value;
-        return true;
+    /**
+     * Sets the value of the Vibrator to the given value or the closest 
+     * boundary value if the given value is below 0 or above {@link #MAX_VALUE}.
+     * The method is final so it may be safely used by the constructor.
+     * 
+     * @param value Value the vibrator should be set to
+     */
+    public final void setValue(int value) {
+        this.value = Math.max(0, Math.min(Vibrator.MAX_VALUE, value));
     }
 
+    /**
+     * Produces a string for use with our XBee protocol for the Vibe.
+     * @return a string containing all information formatted to XBee protocol
+     */
     public String protocolString() {
         return ""+this.module+","+this.vibrator+","+this.value;
     }
