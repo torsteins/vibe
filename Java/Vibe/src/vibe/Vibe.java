@@ -16,8 +16,10 @@
  */
 package vibe;
 
+import data.ConnectionID;
 import data.Vibrator;
 import gnu.io.*;
+import interfaces.VibeInterface;
 import java.io.*;
 import java.util.HashSet;
 
@@ -25,7 +27,7 @@ import java.util.HashSet;
  *
  * @author tstroemm
  */
-public class Vibe {
+public class Vibe implements VibeInterface {
     // Compile time constants
 
     private static final int READ_TIMEOUT = 3000; // Timeout in milliseconds
@@ -36,6 +38,8 @@ public class Vibe {
     private InputStream inStream;
     private OutputStream outStream;
     private StreamVibe vibe;
+    private ConnectionID remote;
+    private int timeout = -1;
     // State variables
     HashSet<Vibrator> vibs;
 
@@ -69,10 +73,7 @@ public class Vibe {
         this.outStream = this.port.getOutputStream();
 
         // Create StreamVibe
-        PrintStream ps = new PrintStream(this.outStream);
-        InputStreamReader isr = new InputStreamReader(this.inStream);
-        BufferedReader br = new BufferedReader(isr);
-        this.vibe = new StreamVibe(ps, br);
+        this.vibe = new StreamVibe(this.outStream, this.inStream);
 
         // Initial configuration
         try {
@@ -86,73 +87,42 @@ public class Vibe {
         this.vibs = new HashSet<Vibrator>();
     }
 
-    /**
-     * Will return a message as a string from the remote device. This method may
-     * be changed later to return a Message object, or we may move the entire
-     * functionality out of the Vibe interface and handle communication
-     * internally. But strings will do for now. The call blocks for
-     * {@link #OPEN_TIMEOUT} milliseconds if nothing is received.
-     *
-     * @return The message, or null if the request timed out.
-     */
-    public String getMessage() {
-        try {
-            return this.vibe.readLine();
-        } catch (IOException e) {
-            // A timeout occured - return null
-            return null;
-        }
-    }
 
-    /**
-     * Based on the local state, this will send a message to the remote system
-     * containing the values for all known vibrators.
-     */
-    public void sendUpate() {
-        String msg = "UPDATE";
-
-        for (Vibrator vib : this.vibs) {
-            msg = msg + ":" + vib.protocolString();
-        }
-
-        this.vibe.write(msg);
-    }
-
-    /**
-     * Will remove all known Vibrators from the local state.
-     */
+    /////////////////////////////////////////////////////////////////////////
+    ////////////////////  VIBRATION STATE METHODS  //////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    
+    @Override
     public void resetState() {
         this.vibs.clear();
     }
 
-    /**
-     * Will set the {@link Vibrator#value} of all known {@link Vibrator}s to 0.
-     * No change is seen at the on-body system before a call to
-     * {@link #sendUpate()} is successfully made.
-     */
+
+    @Override
     public void clearState() {
         for (Vibrator vib : this.vibs) {
-            vib.setValue(0);
+            vib.setAmplitude(0);
         }
     }
-
-    /**
-     * Will update the state for the given vibrator with the given value. If
-     * no vibrator on this address is know, a new vibrator will be added to
-     * the local state
-     * 
-     * @param module Module on which the vibrator is located
-     * @param vibrator Vibrator number on the module
-     * @param value Vibration value to which the vibrator is set
-     * @return The constructed Vibrator object containing the state
-     */
-    public Vibrator setState(int module, int vibrator, int value) {
-        Vibrator vib = new Vibrator(module, vibrator, value);
-
-        // Will remove the old version, and put in new version
-        this.vibs.remove(vib);
-        this.vibs.add(vib);
-        return vib;
+    
+    @Override
+    public Vibrator setState(int mod, int vib, int amp) {
+        Vibrator v = new Vibrator(mod, vib, amp);
+        return this.setState(v);
+    }
+    
+    @Override
+    public Vibrator setState(int mod, int vib, int amp, int dur, int ivl,
+                            char typ) {
+        Vibrator v = new Vibrator(mod, vib, amp, dur, ivl, typ);
+        return this.setState(v);
+    }
+    
+    private Vibrator setState(Vibrator v) {
+        if (this.getConnection() == null) return null;
+        this.vibs.remove(v);
+        this.vibs.add(v);
+        return v;
     }
 
     /**
@@ -165,6 +135,88 @@ public class Vibe {
      */
     public void setAndSendSingle(int module, int vibrator, int value) {
         Vibrator vib = setState(module, vibrator, value);
-        this.vibe.write("UPDATE:" + vib.protocolString());
+        this.vibe.writeLine("UPDATE:" + vib.protocolString());
+    }
+
+    
+    
+    /////////////////////////////////////////////////////////////////////////
+    ////////////////////////  CONNECTION METHODS  ///////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    
+    @Override
+    public boolean connectPassively(int timeout) {
+        // Ignore call if connection is already established
+        if (this.remote != null) return false;
+        
+        // Configure XBee to send messages to FACES
+        if (!this.vibe.setXBeeRemote(StreamVibe.FACES)) return false;
+        
+        
+        
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public boolean connectActively() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public boolean connectTo(ConnectionID con, int timeout) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
+    
+    @Override
+    public String readMessage() {
+        try {
+            return this.vibe.readLine();
+        } catch (IOException e) {
+            // A timeout occured - return null
+            return null;
+        }
+    }
+
+    @Override
+    public void forceUpdate() {
+        String msg = "UPDATE";
+
+        for (Vibrator vib : this.vibs) {
+            msg = msg + ":" + vib.protocolString();
+        }
+        this.vibe.writeLine(msg);
+    }
+
+    @Override
+    public int available() {
+        try {
+            return this.inStream.available();
+        } catch (IOException e) {
+            System.err.println("Caught exception! " + e.getLocalizedMessage());
+            e.printStackTrace(System.err);
+            return -1;
+        }
+    }
+
+    @Override
+    public void closeConnection() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+
+    @Override
+    public void setTimeout(int millis) {
+        this.timeout = millis;
+    }
+
+    @Override
+    public void setAutoUpdate(int millis) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public ConnectionID getConnection() {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

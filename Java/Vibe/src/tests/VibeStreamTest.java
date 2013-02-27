@@ -14,7 +14,7 @@
  * Copyright (c) 2013 Carnegie Mellon University and/or its affiliates.
  * All rights reserved.
  */
-package test;
+package tests;
 
 import gnu.io.*;
 import java.io.*;
@@ -26,11 +26,11 @@ import vibe.Vibe;
  *
  * @author tstroemm
  */
-public class TestVibe {
+public class VibeStreamTest {
     private static final String SERIALPORTNAME = "/dev/tty.usbserial-AD01UBSI";
 
     public static void main(String[] args) throws PortInUseException, IOException, InterruptedException, UnsupportedCommOperationException {
-        new TestVibe().testVibe();
+        new VibeStreamTest().testVibe();
     }
     
     
@@ -47,53 +47,53 @@ public class TestVibe {
         Vibe vibe = new Vibe(portID);
         
         // Test 1: Attempt to read (should return null)
-        String res = vibe.getMessage();
+        String res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 2: Set the state
         vibe.setState(1, 2, 3);
-        vibe.sendUpate();
-        res = vibe.getMessage();
+        vibe.forceUpdate();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 3: Set another state
         vibe.setState(5, 6, 7);
-        vibe.sendUpate();
-        res = vibe.getMessage();
+        vibe.forceUpdate();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 4: Update a state
         vibe.setState(1, 2, 9);
-        vibe.sendUpate();
-        res = vibe.getMessage();
+        vibe.forceUpdate();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 5: Set a single state and update
         vibe.setAndSendSingle(1, 2, 10);
-        res = vibe.getMessage();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 6: Send regular update
-        vibe.sendUpate();
-        res = vibe.getMessage();
+        vibe.forceUpdate();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 7: Test clear
         vibe.clearState();
-        vibe.sendUpate();
-        res = vibe.getMessage();
+        vibe.forceUpdate();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 8: Test resetState()
         vibe.resetState();
-        vibe.sendUpate();
-        res = vibe.getMessage();
+        vibe.forceUpdate();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
         // Test 9: Set a new state again
         vibe.setState(1, 2, 9);
-        vibe.sendUpate();
-        res = vibe.getMessage();
+        vibe.forceUpdate();
+        res = vibe.readMessage();
         System.out.println("Read a line: "+res);
         
     }
@@ -119,8 +119,7 @@ public class TestVibe {
         InputStream inStream = port.getInputStream();
         OutputStream outStream = port.getOutputStream();
         
-        StreamVibe vibe = new StreamVibe(new PrintStream(outStream),
-                             new BufferedReader(new InputStreamReader(inStream)));
+        StreamVibe vibe = new StreamVibe(outStream, inStream);
         
         System.out.println("Created Vibe element");
 
@@ -131,7 +130,7 @@ public class TestVibe {
         }
         
         System.out.print("Writing... ");
-        vibe.write("ON\n");
+        vibe.writeLine("ON\n");
         System.out.println("ON  written successfully");
         System.out.print("Reading... ");
         String res = vibe.readLine();
@@ -139,7 +138,7 @@ public class TestVibe {
         Thread.sleep(5000);
         
         System.out.print("Writing... ");
-        vibe.write("OFF\n");
+        vibe.writeLine("OFF\n");
         System.out.println("OFF written successfully");
         System.out.print("Reading... ");
         res = vibe.readLine();
@@ -147,7 +146,7 @@ public class TestVibe {
         Thread.sleep(5000);
         
         System.out.print("Writing... ");
-        vibe.write("ON\n");
+        vibe.writeLine("ON\n");
         System.out.println("ON  written successfully");
         System.out.print("Reading... ");
         res = vibe.readLine();
@@ -155,7 +154,7 @@ public class TestVibe {
         Thread.sleep(5000);
         
         System.out.print("Writing... ");
-        vibe.write("OFF\n");
+        vibe.writeLine("OFF\n");
         System.out.println("OFF written successfully");
         System.out.print("Reading... ");
         res = vibe.readLine();
@@ -163,7 +162,7 @@ public class TestVibe {
         Thread.sleep(5000);
         
         System.out.print("Writing... ");
-        vibe.write("ON\n");
+        vibe.writeLine("ON\n");
         System.out.println("ON  written successfully");
         System.out.print("Reading... ");
         res = vibe.readLine();
