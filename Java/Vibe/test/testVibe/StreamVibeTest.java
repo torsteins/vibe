@@ -16,11 +16,13 @@
  */
 package testVibe;
 
+import div.FindComPort;
 import gnu.io.*;
 import java.io.IOException;
-import java.util.Enumeration;
-import org.junit.*;
+import org.junit.After;
 import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 import vibe.StreamVibe;
 
 /**
@@ -37,7 +39,7 @@ public class StreamVibeTest {
     public void setUp() throws PortInUseException,
             UnsupportedCommOperationException, IOException {
         
-        CommPortIdentifier portID = getSerialCommPortIDbyName(SERIALPORTNAME);
+        CommPortIdentifier portID = FindComPort.getSerialCommPortIDbyName(SERIALPORTNAME);
         assertNotNull(portID);
         assertEquals(portID.getPortType(), CommPortIdentifier.PORT_SERIAL);
         
@@ -65,36 +67,6 @@ public class StreamVibeTest {
         assertTrue(this.vibe.setXBeeRemote(0,0xFACE));
         Thread.sleep(1000);
         assertTrue(this.vibe.configure("DH", "DL"));
-    }
-    
-    
-    
-    
-    
-    
-    public static CommPortIdentifier getSerialCommPortIDbyName(String name) {
-        // Get list of all ports
-        Enumeration<CommPortIdentifier> portList;
-        portList = CommPortIdentifier.getPortIdentifiers();
-        
-        // Check each port in list and find matching port
-        CommPortIdentifier result = null;
-        while (portList.hasMoreElements()) {
-            CommPortIdentifier id = portList.nextElement();
-            if (id.getName().equals(name)) {
-                result = id;
-            }
-        }
-        
-        // Return null if result is invalid
-        if ((result == null)
-                || (result.isCurrentlyOwned()) 
-                || (result.getPortType() != CommPortIdentifier.PORT_SERIAL)) {
-            return null;
-        }
-        
-        // Else
-        return result;
     }
     
 }
