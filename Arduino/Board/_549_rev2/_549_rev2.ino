@@ -34,6 +34,9 @@
 */
 #include "Tlc5940.h"
 
+#define SQUARE 1
+#define GAUSS 2
+#define TRIANGLE 3
 
 #define BUFFLEN 1024
 #define BLINK_LED 13
@@ -90,34 +93,103 @@ void loop() {
     return;
   }
   
-  // call startWaveReponse() to initiate a wave
+  // Simple acknowledgement
+  Serial.print("(" + String(len) + ") ");
   
   // Add terminating null character, then convert to string
   inData[len] = '\0';
   String cmd = String(inData);
+  parseMessage(cmd, len);
+  Serial.println("");
+}
+
+
+void parseMessage(String cmd, int len) {
   
-  // Acknowledge with length of received message
-  Serial.print("(");
-  Serial.print(len);
-  Serial.print(") ");
-  
-  if (cmd.startsWith("UPDATE:0,0,0")) {
-    startWaveReponse();
-    Serial.print("Received message: ");
-    Serial.println(cmd);
-    digitalWrite(BLINK_LED, LOW);
-  }
-  else if (cmd.startsWith("UPDATE:0,0,")) {
-    startWaveReponse();
-    Serial.print("Received message: ");
-    Serial.println(cmd);
-    digitalWrite(BLINK_LED, HIGH);
-  }
-  else {
-    Serial.print("Received unknown message: ");
-    Serial.println(inData);
+  // Acknowledge with length of received message  
+  if (cmd.startsWith("UPDATE:")) {
+    cmd = cmd.substring(7);
+    
+    int colon = 0;
+    while (colon >= 0) {
+      
+      String val;
+      colon = cmd.indexOf(':');
+      if (colon > 0) {
+        val = cmd.substring(0,colon);
+        cmd = cmd.substring(1+colon);
+      } else {
+        val = cmd;
+      }
+      parseVibratorString(val);
+      
+    }
   }
 }
+
+void parseVibratorString(String cmd) {
+  int mod, vib, amp, dur, ivl;
+  char buf[8];
+  
+  // First value: Module
+  int comma = cmd.indexOf(',');
+  String val = cmd.substring(0,comma);
+  val.toCharArray(buf,8);
+  mod = atoi(buf);
+  cmd = cmd.substring(comma+1);
+
+  
+  // Second value: Vibrator
+  comma = cmd.indexOf(',');
+  val = cmd.substring(0,comma);
+  val.toCharArray(buf,8);
+  vib = atoi(buf);
+  cmd = cmd.substring(comma+1);
+  
+  // Third value: Amplitude
+  comma = cmd.indexOf(',');
+  val = cmd.substring(0,comma);
+  val.toCharArray(buf,8);
+  amp = atoi(buf);
+  cmd = cmd.substring(comma+1);
+  
+  // Fourth value: Duration
+  comma = cmd.indexOf(',');
+  val = cmd.substring(0,comma);
+  val.toCharArray(buf,8);
+  dur = atoi(buf);
+  cmd = cmd.substring(comma+1);
+  
+  // Fifth value: Interval
+  comma = cmd.indexOf(',');
+  val = cmd.substring(0,comma);
+  val.toCharArray(buf,8);
+  ivl = atoi(buf);
+  cmd = cmd.substring(comma+1);
+  
+  // Sixth value: Type - this is the remainder, so do nothing
+  
+  // Call method to treat the data
+  receivedMessage(mod, vib, amp, dur, ivl, cmd);
+}
+    
+    
+    
+void receivedMessage(int mod, int vib, int amp, int dur, int ivl, String typ) {
+  String res = "Vib"+String(mod)+"-"+String(vib)+" A:"+String(amp);
+  res = res + " D:"+String(dur)+" I:"+String(ivl)+" T:"+typ;
+  Serial.print(res+"   ");
+  
+  startWaveReponse();
+  
+  
+  if (vib == 0) {
+    digitalWrite(BLINK_LED, LOW);
+  } else {
+    digitalWrite(BLINK_LED, LOW);
+  }   
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // void startWaveResponse()
