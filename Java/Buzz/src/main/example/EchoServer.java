@@ -1,3 +1,5 @@
+import data.Vibrator;
+import div.FindComPort;
 import gnu.io.CommPortIdentifier;
 import gnu.io.PortInUseException;
 import java.io.BufferedReader;
@@ -11,7 +13,6 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.WebSocketImpl;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-import test.TestVibe;
 import vibe.Vibe;
 
 /**
@@ -42,17 +43,49 @@ public class EchoServer extends WebSocketServer {
 
 	@Override
 	public void onMessage( WebSocket conn, String message ) {
+        int mod = 0, vib = 0, amp = 0, dur = 1000;
+        int ivl = Vibrator.INTERVAL_NOREPEAT;
+        char typ = 'S';
         
-        if (EchoServer.on) {
-            EchoServer.vibe.setState(0, 0, 0);
-        }
-        else {
-            EchoServer.vibe.setState(0, 0, Integer.MAX_VALUE);
+        // Attempt to parse the message string
+        try {
+            String msg = message.substring(0, message.length()-2);
+            String[] parameters = msg.split(":");
+            for (String parameter : parameters) {
+                String[] strings = parameter.split("=");
+                
+                // ID
+                if (strings[0].equals("id")) {
+                    vib = Integer.parseInt(strings[1]) - 1;
+                }
+                // Amplitude
+                else if (strings[0].equals("mag")) {
+                    amp = Integer.parseInt(strings[1]);
+                }
+                else if (strings[0].equals("mode")) {
+                    if (strings[1].equals("triangle")) {
+                        typ = 'T';
+                    } else if (strings[1].equals("sine")) {
+                        typ = 'G';
+                    } else if (strings[1].equals("square")) {
+                        typ = 'S';
+                        dur = 1;
+                        ivl = 1;
+                    } 
+                }
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Failed parse! Message: "+message);
+            e.printStackTrace(System.err);
         }
         
-        EchoServer.vibe.sendUpate();
+        EchoServer.vibe.setState(mod, vib, amp, 1, 0, typ);
+        
+        
+        EchoServer.vibe.forceUpdate();
         EchoServer.on = ! EchoServer.on;
-        String rspv = EchoServer.vibe.getMessage();
+        String rspv = EchoServer.vibe.readMessage();
         
 		System.out.println( conn + ": " + message );
         System.out.println( "Arduino response: " + rspv);
@@ -60,7 +93,7 @@ public class EchoServer extends WebSocketServer {
 	}
 
 	public static void main( String[] args ) throws InterruptedException , IOException, IllegalArgumentException, PortInUseException {
-        CommPortIdentifier portID = TestVibe.getSerialCommPortIDbyName(SERIALPORTNAME);
+        CommPortIdentifier portID = FindComPort.getSerialCommPortIDbyName(SERIALPORTNAME);
         if (portID == null) {
             System.err.println("Found no available port "+ SERIALPORTNAME);
             return;
