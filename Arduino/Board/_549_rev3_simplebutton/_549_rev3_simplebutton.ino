@@ -36,10 +36,18 @@
 #include "button.h"
 #include "MemoryFree.h"
 
+/*
+#ifndef DEBUG
+#define DEBUG
+#endif
+*/
+
 #define FRONT 0
 #define BACK 1
 #define LEFT 2
 #define RIGHT 3
+
+#define DEF_DURATION 1000*60*5 // 5 minutes
 
 #define BUFFLEN 512
 #define BLINK_LED 13
@@ -48,18 +56,18 @@ char inData[BUFFLEN];
 
 #define BUTTONS 12
 ermButton *erm[BUTTONS] = {
-  new ermButton(1,2),
-  new ermButton(3,4),
-  new ermButton(5,6),
-  new ermButton(7,8),
-  new ermButton(9,10),
-  new ermButton(11,12),
-  new ermButton(13,14),
-  new ermButton(15,16),
-  new ermButton(17,18),
-  new ermButton(19,20),
-  new ermButton(21,22),
-  new ermButton(23,24)
+  new ermButton(0,1),
+  new ermButton(2,3),
+  new ermButton(4,5),
+  new ermButton(6,7),
+  new ermButton(8,9),
+  new ermButton(10,11),
+  new ermButton(12,13),
+  new ermButton(14,15),
+  new ermButton(16,17),
+  new ermButton(18,19),
+  new ermButton(20,21),
+  new ermButton(22,23)
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,14 +84,18 @@ void setup() {
   digitalWrite(BLINK_LED, LOW);
   
   // Initialise neighbours
+  /*
   for (int i = 0; i < BUTTONS; i++) {
     erm[i]->setNeighbors(erm[(i+BUTTONS-1)%BUTTONS], erm[(i+1)%BUTTONS]);
   }
- 
+  */
+  
+  #ifdef DEBUG
   Serial.print("Free memory: ");
   // 5869 with stuff initialised
   // 6327 with no stuff
   Serial.println(freeMemory());
+  #endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -200,48 +212,16 @@ void receivedMessage(int mod, int vib, int amp, int dur, int ivl, String typ) {
   res = res + " D:"+String(dur)+" I:"+String(ivl)+" T:"+typ;
   Serial.print(res+"   ");
   
-  
-  ermButton *targetERM;
-  
-  switch(vib) {
-  case FRONT:
-    targetERM = erm[0];
-    break;
-  case BACK:
-    targetERM = erm[4];
-    break;
-  case LEFT:
-    targetERM = erm[6];
-    break;
-  case RIGHT:
-    targetERM = erm[2];
-    break;
-  default:
-    break;
-    
-  }
-  
-  // currently ignoring the wave type
-  
-  targetERM->impulseTriangle(amp);
-  
-  
-  
+  dur = (dur <= 1) ? DEF_DURATION : dur;
+  erm[vib]->sendPulse(amp, dur);
   
   if (vib == 0) {
+    if (amp == 0) {
     digitalWrite(BLINK_LED, LOW);
-  } else {
-    digitalWrite(BLINK_LED, LOW);
+    } else {
+    digitalWrite(BLINK_LED, HIGH);
+    }
   }
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// void startWaveResponse()
-////////////////////////////////////////////////////////////////////////////////
-void startWaveReponse()
-{
-  // do stuff
 }
 
 
